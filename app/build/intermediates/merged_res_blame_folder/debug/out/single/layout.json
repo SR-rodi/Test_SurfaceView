@@ -1,0 +1,14 @@
+[
+    {
+        "merged": "C:\\Users\\rodin\\.gradle\\daemon\\7.4\\com.example.surface.app-mergeDebugResources-28:\\layout\\activity_main.xml",
+        "source": "C:\\Users\\rodin\\.gradle\\daemon\\7.4\\com.example.surface.app-main-31:\\layout\\activity_main.xml"
+    },
+    {
+        "merged": "C:\\Users\\rodin\\.gradle\\daemon\\7.4\\com.example.surface.app-mergeDebugResources-28:\\layout\\test.xml",
+        "source": "C:\\Users\\rodin\\.gradle\\daemon\\7.4\\com.example.surface.app-main-31:\\layout\\test.xml"
+    },
+    {
+        "merged": "com.example.surface.app-mergeDebugResources-28:/layout/activity_main.xml",
+        "source": "com.example.surface.app-main-31:/layout/activity_main.xml"
+    }
+]
