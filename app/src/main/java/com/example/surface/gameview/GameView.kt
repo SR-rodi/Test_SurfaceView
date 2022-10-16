@@ -7,10 +7,9 @@ import android.view.MotionEvent
 import android.view.SurfaceView
 import com.example.surface.draw.BitmapConverter
 import com.example.surface.R
-import com.example.surface.board.GameBoard
-import com.example.surface.draw.Drawable
-import com.example.surface.draw.Shape
-
+import com.example.surface.gameWorld.Footer
+import com.example.surface.gameWorld.GameBoard
+import com.example.surface.gameWorld.Shape
 
 class GameView(
     context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int
@@ -26,12 +25,12 @@ class GameView(
     constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
     constructor(context: Context) : this(context, null)
 
-    private var boardWidth: Int? = null
-    private var boardHeight: Int? = null
+    var gameHeight: Float? = null
+    var gameWidth: Float? = null
+
     private val board = GameBoard()
-    private val drawable = Drawable(board.cellArray)
-    private val shape = Shape()
-    private val gameHolderCallback = GameHolderCallback({ newDraw() })
+    private val footer = Footer()
+    private val gameHolderCallback = GameHolderCallback { newDraw() }
 
     init {
         holder.addCallback(gameHolderCallback)
@@ -43,52 +42,47 @@ class GameView(
         holder.unlockCanvasAndPost(canvas)
     }
 
+    private fun setSize(width: Int, height: Int) {
+        if (gameWidth == null) {
+            gameHeight = height.toFloat()
+            gameWidth = width.toFloat()
+            board.setSize(gameWidth!!, gameHeight!!)
+            footer.setSize(gameWidth!!, gameHeight!!)
+        }
+    }
+
     private val emptyTile = BitmapConverter().getBitmap(resources, R.drawable.tile)
     private val fullTile = BitmapConverter().getBitmap(resources, R.drawable.ston)
     private val backgroundColor = context.getColor(R.color.green)
-    private val footer = BitmapConverter().getBitmap(resources, R.drawable.footer)
+    private val footerTile = BitmapConverter().getBitmap(resources, R.drawable.footer)
 
     override fun draw(canvas: Canvas?) {
         super.draw(canvas)
         setSize(width, height)
-        drawable.backgroundColor(canvas, backgroundColor)
-        emptyTile?.let { fullTile?.let { it1 -> drawable.renderBoard(canvas, emptyTile, it1) } }
-        drawable.footer(canvas, footer)
-        shape.draw(canvas)
+        canvas?.drawColor(backgroundColor)
+        emptyTile?.let { fullTile?.let { fullTile -> board.draw(canvas, emptyTile, fullTile) } }
+        footerTile?.let { footerTile -> footer.draw(canvas, footerTile) }
+
     }
 
-
+    var isMove: Boolean = false
+    var moveShape: Shape? = null
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        val center = board.cellSize
 
         when (event!!.action) {
-            MotionEvent.ACTION_DOWN -> {}
+            MotionEvent.ACTION_DOWN -> {
+                moveShape = footer.isShapeNumber(event.x, event.y)
+                if (moveShape != null) isMove = true
+            }
             MotionEvent.ACTION_UP -> {
-                if (shape.isMove)
-                    board.getPosition(shape.x, shape.y)
-
-                shape.setDefaultPosition()
-                shape.isMove = false
+                moveShape?.setDefaultPosition()
+                moveShape = null
+                isMove = false
             }
             MotionEvent.ACTION_MOVE -> {
-                if (shape.isBoard(event.x, event.y)) {
-                    shape.isMove = true
-                    shape.x = event.x - center
-                    shape.y = event.y - center
-                }
+                moveShape?.setPosition(event.x, event.y)
             }
         }
-        return true
-    }
-
-    private fun setSize(width: Int, height: Int) {
-        if (boardWidth == null) {
-            boardWidth = width
-            boardHeight = height
-            board.setSize(boardWidth!!, boardHeight!!)
-            drawable.setSize(board)
-            shape.footerRect = board.footerRect
-            shape.setSize(board)
-        }
-    }
+    return true
+}
 }
