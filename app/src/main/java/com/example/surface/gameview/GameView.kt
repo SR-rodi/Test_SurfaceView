@@ -1,7 +1,9 @@
 package com.example.surface.gameview
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.SurfaceView
@@ -12,18 +14,17 @@ import com.example.surface.gameWorld.GameBoard
 import com.example.surface.gameWorld.Shape
 
 class GameView(
-    context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int
+    context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int,
 ) : SurfaceView(context, attrs, defStyleAttr, defStyleRes) {
 
+    constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
+    constructor(context: Context) : this(context, null)
     constructor(context: Context, attrs: AttributeSet?, defStileAttrs: Int) : this(
         context,
         attrs,
         defStileAttrs,
         0
     )
-
-    constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
-    constructor(context: Context) : this(context, null)
 
     var gameHeight: Float? = null
     var gameWidth: Float? = null
@@ -38,6 +39,8 @@ class GameView(
 
     private fun newDraw() {
         val canvas = holder.lockCanvas()
+        canvas.clipBounds
+
         draw(canvas)
         holder.unlockCanvasAndPost(canvas)
     }
@@ -61,28 +64,45 @@ class GameView(
         setSize(width, height)
         canvas?.drawColor(backgroundColor)
         emptyTile?.let { fullTile?.let { fullTile -> board.draw(canvas, emptyTile, fullTile) } }
-        footerTile?.let { footerTile -> footer.draw(canvas, footerTile) }
-
+        footerTile?.let { footerTile -> footer.draw(canvas, footerTile, fullTile) }
     }
 
     var isMove: Boolean = false
     var moveShape: Shape? = null
+
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
 
         when (event!!.action) {
             MotionEvent.ACTION_DOWN -> {
                 moveShape = footer.isShapeNumber(event.x, event.y)
-                if (moveShape != null) isMove = true
+                if (moveShape != null) {
+                    moveShape!!.cellSizeInDraw = board.cellSize!!
+                    isMove = true
+                }
             }
             MotionEvent.ACTION_UP -> {
-                moveShape?.setDefaultPosition()
+                val cellPosition = moveShape?.let {
+                    board.getPosition(event.x - board.cellSize!!,
+                        event.y - board.cellSize!!,
+                        it)
+                }
+                if (cellPosition != null && moveShape != null)
+                    if (board.setCell(cellPosition, moveShape!!)) {
+                        moveShape!!.setDefaultPosition()
+                        footer.setNewShape()
+                    }
+                moveShape?.setDefaultPosition(footer.cellSize)
+
                 moveShape = null
                 isMove = false
             }
             MotionEvent.ACTION_MOVE -> {
-                moveShape?.setPosition(event.x, event.y)
+                moveShape?.setPosition(event.x - board.cellSize!!,
+                    event.y - board.cellSize!!,
+                    board.cellSize)
             }
         }
-    return true
-}
+        return true
+    }
 }

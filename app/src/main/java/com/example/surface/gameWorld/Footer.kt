@@ -6,7 +6,9 @@ import com.example.surface.*
 
 class Footer(private val amountShape: Int = AMOUNT_SHAPE) : GameWorld() {
 
-    val listShape = List(amountShape) { Shape() }
+    private val listShape = Array(amountShape) { Shape() }
+
+    var cellSize = 0f
 
     private var shapeSizeForX = 0f
 
@@ -24,48 +26,42 @@ class Footer(private val amountShape: Int = AMOUNT_SHAPE) : GameWorld() {
         rectangle.right = rectangle.left + width - paddingHorizontal
         rectangle.bottom = rectangle.top + height
         listShape.forEachIndexed { position, shape ->
-            shape.setPosition(rectangle.left + shapeSizeForX * position, rectangle.top)
+            cellSize = shapeSizeForX / (shape.shapeColumns + 2)
+            shape.setPosition(rectangle.left + shapeSizeForX * position, rectangle.top,cellSize)
             shape.getDefaultPosition(rectangle.left + shapeSizeForX * position, rectangle.top)
         }
-    }
-
-    val paint = Paint().apply {
-        color = Color.BLUE
-        alpha = 50
-    }
-    val paint1 = Paint().apply {
-        color = Color.RED
     }
 
     override fun draw(canvas: Canvas?, oneTile: Bitmap, twoTile: Bitmap?) {
         canvas?.drawBitmap(oneTile, null, rectangle, Paint())
 
-        listShape.forEachIndexed { position, shape ->
-            val cellSize = shapeSizeForX / (shape.shapeColumns + 2)
-            shape.modelArray.forEachIndexed { row, cells ->
-                cells.forEachIndexed { col, cell ->
-                    shape.shapeRect.left = shape.shapeX + (cellSize * col)
-                    shape.shapeRect.top = shape.shapeY + (cellSize * row)
-                    shape.shapeRect.right = shape.shapeRect.left + cellSize
-                    shape.shapeRect.bottom = shape.shapeRect.top + cellSize
-                    if (cell == Cell.FULL) canvas?.drawRect(shape.shapeRect, paint1)
-                    else canvas?.drawRect(shape.shapeRect, paint)
-                }
-            }
+        listShape.forEach { shape ->
+            twoTile?.let { shape.draw(canvas, it) }
         }
     }
 
+    private var shapeSelectPosition = 0
     fun isShapeNumber(x: Float, y: Float): Shape? {
         val isVerticalCoordinateShape = y > rectangle.top && y < rectangle.bottom
-        var shape :Shape?=null
-        for (position in 0 until amountShape)
+        var selectShape: Shape? = null
+        listShape.forEachIndexed { position, shape ->
             if (x > rectangle.left + shapeSizeForX * position
                 && x < shapeSizeForX * (position + 1) && isVerticalCoordinateShape
             ) {
-                shape = listShape[position]
-                Log.d("Kart", "$shape")
-                break
+                selectShape = shape
+                shapeSelectPosition = position
+                return@forEachIndexed
             }
-        return shape
+        }
+        return selectShape
+    }
+
+    fun setNewShape() {
+        val x = listShape[shapeSelectPosition].shapeX
+        val y = listShape[shapeSelectPosition].shapeY
+        val shape = Shape()
+        shape.getDefaultPosition(x,y)
+        shape.setDefaultPosition(cellSize)
+        listShape[shapeSelectPosition] = shape
     }
 }

@@ -4,8 +4,18 @@ import kotlinx.coroutines.*
 
 class GameThread {
 
+
     private val job = Job()
     private val scope = CoroutineScope(job + Dispatchers.IO)
+
+    fun newAnimate(block: () -> Boolean) {
+        scope.launch {
+            var ismove = true
+            while (ismove) {
+                ismove = block()
+            }
+        }
+    }
 
     fun startDraw(block: () -> Unit) {
         scope.launch {
@@ -16,15 +26,15 @@ class GameThread {
         }
     }
 
-    fun stop(){
+    fun stop() {
         job.cancel()
     }
 
     //плавная картинка
-  private suspend fun fps(startTime: Long) {
-       val sleepTime = (System.nanoTime() - startTime) - FRAME_TIME
-       if (sleepTime > 0) delay(sleepTime)
-   }
+    private suspend fun fps(startTime: Long) {
+        val sleepTime = (System.nanoTime() - startTime) - FRAME_TIME
+        if (sleepTime > 0) delay(sleepTime)
+    }
 
     companion object {
         private const val MILLION = 1000000

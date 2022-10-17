@@ -1,89 +1,67 @@
 package com.example.surface.gameWorld
 
-import android.graphics.RectF
+import android.graphics.*
+import android.util.Log
 import kotlin.random.Random
+import kotlin.random.nextInt
 
-class Shape() {
+
+class Shape():GameWorld() {
+    private val generateShapeModel = GenerateShapeModel()
+
+
+    val model = generateShapeModel.setModel(Random.nextInt(1..6))
+    var shiftPosition = 0
+    var modelArray = generateShapeModel.setShape(model)
+
+init {
+    shiftPosition = generateShapeModel.shift // магия, при объявлении не присваивается
+    }
+
+    var cellSizeInFooter = 0f
+    var cellSizeInDraw = 0f
     val shapeRect = RectF()
-    var shapeX = 0f
-    var shapeY = 0f
-    val model = random(Random.nextInt())
-    var modelArray = setShape(model)
-    var shapeRow = 0
-    var shapeColumns = 0
+
+    var shapeX: Float = 0f
+    var shapeY: Float = 0f
+
+    var shapeRow = modelArray.size
+    var shapeColumns = modelArray[0].size
     var defX = 0f
     var defY = 0f
 
 
-    private fun random(number: Number) = when (number) {
-        1 -> Model.LINE_HOR
-        2 -> Model.CORNER_LEFT
-        3 -> Model.SQUARE
-        4 -> Model.CORNER_RIGHT
-        5 -> Model.LINE_VER
-        else -> Model.CROSS
-    }
-
-    private fun setShape(model: Model): Array<Array<Cell>> {
-
-        return when (model) {
-            Model.LINE_HOR -> {
-                shapeRow = 1
-                shapeColumns = 4
-                modelArray = Array(shapeRow) { Array(shapeColumns) { Cell.FULL } }
-                modelArray
-            }
-
-            Model.CORNER_LEFT -> {
-                shapeRow = 2
-                shapeColumns = 3
-                modelArray = Array(shapeRow) { Array(shapeColumns) { Cell.FULL } }
-                this.modelArray[0][1] = Cell.EMPTY
-                this.modelArray[0][2] = Cell.EMPTY
-                modelArray
-            }
-            Model.SQUARE -> {
-                shapeColumns = 2
-                modelArray = Array(shapeColumns) { Array(shapeColumns) { Cell.FULL } }
-                modelArray
-            }
-            Model.CORNER_RIGHT -> {
-                shapeRow = 2
-                shapeColumns = 3
-                modelArray = Array(shapeRow) { Array(shapeColumns) { Cell.FULL } }
-                this.modelArray[0][1] = Cell.EMPTY
-                this.modelArray[0][0] = Cell.EMPTY
-                modelArray
-            }
-            Model.CROSS -> {
-                shapeRow = 2
-                shapeColumns = 3
-                modelArray = Array(shapeRow) { Array(shapeColumns) { Cell.FULL } }
-                this.modelArray[0][2] = Cell.EMPTY
-                this.modelArray[0][0] = Cell.EMPTY
-                modelArray
-            }
-            Model.LINE_VER -> {
-                shapeRow = 4
-                shapeColumns = 1
-                modelArray = Array(shapeRow) { Array(shapeColumns) { Cell.FULL } }
-                modelArray
-            }
-        }
-    }
-
-    fun setPosition(x: Float, y: Float) {
+    fun setPosition(x: Float, y: Float,cellSize:Float?=null) {
+        cellSize?.let {cellSizeInDraw = it }
         shapeX = x
         shapeY = y
     }
-
     fun getDefaultPosition(defX: Float, defY: Float) {
         this.defX = defX
         this.defY = defY
     }
 
-    fun setDefaultPosition(){
-        shapeX=defX
-        shapeY=defY
+    fun setDefaultPosition(cellSize: Float?=null) {
+        cellSize?.let {cellSizeInDraw = it }
+        shapeX = defX
+        shapeY = defY
+    }
+
+    override fun setSize(newWidth: Float, newHeight: Float) {
+        cellSizeInFooter = newWidth
+        cellSizeInDraw = cellSizeInFooter
+
+    }
+
+    override fun draw(canvas: Canvas?, oneTile: Bitmap, twoTile: Bitmap?) {
+        modelArray.forEachIndexed { row, cells ->
+            cells.forEachIndexed { col, cell ->
+                shapeRect.left = shapeX + (cellSizeInDraw * col)
+                shapeRect.top = shapeY + (cellSizeInDraw * row)
+                shapeRect.right = shapeRect.left + cellSizeInDraw
+                shapeRect.bottom = shapeRect.top + cellSizeInDraw
+                if (cell == Cell.FULL) canvas?.drawBitmap(oneTile,null,shapeRect, Paint())
+            }
+        }
     }
 }

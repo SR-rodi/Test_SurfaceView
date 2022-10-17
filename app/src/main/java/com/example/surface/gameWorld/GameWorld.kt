@@ -13,4 +13,5 @@ abstract class GameWorld{
 
    abstract fun setSize(newWidth: Float, newHeight: Float)
    abstract fun draw(canvas: Canvas?, oneTile: Bitmap, twoTile: Bitmap?=null)
+
 }
