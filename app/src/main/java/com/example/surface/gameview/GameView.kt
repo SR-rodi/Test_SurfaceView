@@ -3,15 +3,15 @@ package com.example.surface.gameview
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Rect
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.SurfaceView
-import com.example.surface.draw.BitmapConverter
 import com.example.surface.R
-import com.example.surface.gameWorld.Footer
-import com.example.surface.gameWorld.GameBoard
-import com.example.surface.gameWorld.Shape
+import com.example.surface.draw.BitmapConverter
+import com.example.surface.gameWorld.element.GameWorld
+import com.example.surface.gameWorld.element.RenderGame
+import com.example.surface.gameWorld.element.Shape
 
 class GameView(
     context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int,
@@ -26,11 +26,9 @@ class GameView(
         0
     )
 
-    var gameHeight: Float? = null
-    var gameWidth: Float? = null
+    var isStartRender = true
 
-    private val board = GameBoard()
-    private val footer = Footer()
+    private val renderGame by lazy { GameWorld() }
     private val gameHolderCallback = GameHolderCallback { newDraw() }
 
     init {
@@ -39,18 +37,14 @@ class GameView(
 
     private fun newDraw() {
         val canvas = holder.lockCanvas()
-        canvas.clipBounds
-
         draw(canvas)
         holder.unlockCanvasAndPost(canvas)
     }
 
     private fun setSize(width: Int, height: Int) {
-        if (gameWidth == null) {
-            gameHeight = height.toFloat()
-            gameWidth = width.toFloat()
-            board.setSize(gameWidth!!, gameHeight!!)
-            footer.setSize(gameWidth!!, gameHeight!!)
+        if (isStartRender) {
+            isStartRender = false
+            renderGame.setSize(width.toFloat(), height.toFloat())
         }
     }
 
@@ -63,8 +57,8 @@ class GameView(
         super.draw(canvas)
         setSize(width, height)
         canvas?.drawColor(backgroundColor)
-        emptyTile?.let { fullTile?.let { fullTile -> board.draw(canvas, emptyTile, fullTile) } }
-        footerTile?.let { footerTile -> footer.draw(canvas, footerTile, fullTile) }
+        if (fullTile != null && emptyTile != null && footerTile != null)
+            renderGame.draw(canvas, fullTile, emptyTile, footerTile)
     }
 
     var isMove: Boolean = false
@@ -75,32 +69,29 @@ class GameView(
 
         when (event!!.action) {
             MotionEvent.ACTION_DOWN -> {
-                moveShape = footer.isShapeNumber(event.x, event.y)
+                moveShape = renderGame.getShape(event.x, event.y)
+                moveShape?.setPosition(event.x,event.y)
                 if (moveShape != null) {
-                    moveShape!!.cellSizeInDraw = board.cellSize!!
                     isMove = true
                 }
             }
             MotionEvent.ACTION_UP -> {
+                moveShape?.sendDefaultPosition()
                 val cellPosition = moveShape?.let {
-                    board.getPosition(event.x - board.cellSize!!,
-                        event.y - board.cellSize!!,
-                        it)
+                    renderGame.getPosition(event.x, event.y, it)
                 }
                 if (cellPosition != null && moveShape != null)
-                    if (board.setCell(cellPosition, moveShape!!)) {
-                        moveShape!!.setDefaultPosition()
-                        footer.setNewShape()
+                    if (renderGame.setCell(cellPosition, moveShape!!)){
+                        moveShape!!.sendDefaultPosition()
+                        renderGame.setNewShape()
                     }
-                moveShape?.setDefaultPosition(footer.cellSize)
 
                 moveShape = null
                 isMove = false
             }
             MotionEvent.ACTION_MOVE -> {
-                moveShape?.setPosition(event.x - board.cellSize!!,
-                    event.y - board.cellSize!!,
-                    board.cellSize)
+                if (isMove)
+                    moveShape?.setPosition(event.x, event.y)
             }
         }
         return true
